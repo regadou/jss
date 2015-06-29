@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir=".." name="ets-IDE">
+    <!-- TODO: edit the following target according to your needs -->
+    <!-- (more info: http://www.netbeans.org/kb/articles/freeform-config.html#debugj2se) -->
+    <target name="load-props">
+        <property file="nbproject/project.properties"/>
+    </target>
+    <target depends="load-props" name="debug-nb">
+        <nbjpdaconnect address="${jpda.address}" host="${jpda.host}" name="${session.name}" transport="${jpda.transport}">
+            <sourcepath>
+                <path path="${debug.sourcepath}"/>
+            </sourcepath>
+        </nbjpdaconnect>
+    </target>
+</project>
