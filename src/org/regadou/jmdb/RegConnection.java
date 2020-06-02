@@ -3,6 +3,7 @@ package org.regadou.jmdb;
 import java.util.Properties;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.sql.*;
 import com.healthmarketscience.jackcess.*;
 
@@ -42,7 +43,7 @@ public class RegConnection implements Connection
 				db = null;
 			}
 		}
-		catch (Exception e) { throw new SQLException(e.toString()); }
+		catch (Exception e) { throw new SQLException(e.toString(), e); }
 	}
 
 	public void commit()
@@ -277,6 +278,25 @@ public class RegConnection implements Connection
 	{
 		return null;
 	}
+	
+	public int getNetworkTimeout() throws SQLException {
+	   if (db == null)
+	      throw new SQLException("Database connetion is closed");
+	   return 0;
+	}
+	
+	public void setNetworkTimeout(Executor executor, int milliseconds) {}
+	
+	public void abort(Executor executor) throws SQLException {
+	   close();
+	}
+	
+	public String getSchema() {
+	   return null;
+	}
+          
+   public void setSchema(String schema) {}
+
 }
 
 

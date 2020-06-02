@@ -3,6 +3,7 @@ package org.regadou.jmdb;
 import java.sql.*;
 import java.io.File;
 import java.util.Properties;
+import java.util.logging.Logger;
 import com.healthmarketscience.jackcess.*;
 
 public class MDBDriver implements Driver
@@ -71,6 +72,10 @@ public class MDBDriver implements Driver
 	public boolean jdbcCompliant()
 	{
 		return false;
+	}
+	
+	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+	   throw new SQLFeatureNotSupportedException("MDBDriver does not use logging");
 	}
 }
 

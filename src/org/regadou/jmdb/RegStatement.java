@@ -589,6 +589,11 @@ public class RegStatement implements Statement
 		return (sets == null);
 	}
 	
+	public boolean isCloseOnCompletion() {
+	   return false;
+	}
+	
+	public void closeOnCompletion() {}
 	public boolean isPoolable()
 	{
 		return false;

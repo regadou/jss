@@ -150,17 +150,25 @@ public class Database
 	
    public int recordCount() throws SQLException
    {
-      return recordCount(lastrs);
+      PreparedStatement ps = con.prepareStatement("select found_rows()");
+      ResultSet rs = ps.executeQuery();
+      int n = rs.next() ? rs.getInt(1) : 0;
+      rs.close();
+      ps.close();
+      return n;
    }
 
    public int recordCount(ResultSet rs) throws SQLException
    {
+      return recordCount();
+   /*
       if (rs == null || rs.getType() == ResultSet.TYPE_FORWARD_ONLY)
          return -1;
 		rs.last();
       int nb = rs.getRow();
       rs.beforeFirst();
       return nb;
+   */
    }
 
    public ResultSet query(String q) throws SQLException
@@ -316,7 +324,7 @@ public class Database
          int nf = meta.getColumnCount();
          for (int f = 1; f <= nf; f++)
 			{
-            String name = meta.getColumnName(f).toLowerCase();
+            String name = meta.getColumnLabel(f).toLowerCase();
             String type = getType(meta.getColumnType(f));
 				Integer size = new Integer(meta.getColumnDisplaySize(f));
 				ArrayList val = new ArrayList();
@@ -367,7 +375,7 @@ public class Database
          int nf = meta.getColumnCount();
 			Object lst[] = new Object[nf];
          for (int f = 1; f <= nf; f++)
-            lst[f-1] = meta.getColumnName(f).toLowerCase();
+            lst[f-1] = meta.getColumnLabel(f).toLowerCase();
          return Interpreter.newObject(lst);
       }
       catch (Exception e) { throw new RuntimeException(e.toString()); }
@@ -408,22 +416,10 @@ public class Database
              return null;
          rs = lastrs;
       }
-      Object recs[] = null;
-      int nr = recordCount(rs);
-      if (nr >= 0)
-      {
-         recs = new Object[nr];
-         for (int r = 0; rs.next(); r++)
-            recs[r] = getRecord(rs);
-      }
-      else
-      {
-         ArrayList lst = new ArrayList();
-         while (rs.next())
-            lst.add(getRecord(rs));
-			recs = lst.toArray();
-      }
-      return recs;
+      ArrayList lst = new ArrayList();
+      while (rs.next())
+         lst.add(getRecord(rs));
+		return lst.toArray();
    }
 
    public Scriptable getRecord() throws SQLException
@@ -444,7 +440,7 @@ public class Database
       Scriptable rec = Interpreter.newObject(null);
       for (int f = 1; f <= nf; f++)
       {
-         String fld = meta.getColumnName(f).toLowerCase();
+         String fld = meta.getColumnLabel(f).toLowerCase();
          Object val = rs.getObject(f);
 			if (val == null)
 				;
@@ -489,7 +485,7 @@ public class Database
       Scriptable rec = Interpreter.newObject(null);
       for (int f = 1; f <= nf; f++)
       {
-         String fld = meta.getColumnName(f).toLowerCase();
+         String fld = meta.getColumnLabel(f).toLowerCase();
          Object val = getDefaultValue(meta.getColumnType(f));
          rec.put(fld, rec, val);
       }
@@ -509,7 +505,7 @@ public class Database
       Map rec = new HashMap();
       for (int f = 1; f <= nf; f++)
       {
-         String fld = meta.getColumnName(f).toLowerCase();
+         String fld = meta.getColumnLabel(f).toLowerCase();
          Object val = rs.getObject(f);
 			if (val == null)
 				;

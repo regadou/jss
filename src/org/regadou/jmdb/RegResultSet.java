@@ -380,6 +380,14 @@ public class RegResultSet implements ResultSet
 		return getObject(colName);
 	}
 
+   public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
+      throw new SQLFeatureNotSupportedException("MDBDriver does not support type conversion");
+   }
+
+   public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
+      throw new SQLFeatureNotSupportedException("MDBDriver does not support type conversion");
+   }
+
 	public Ref getRef(int i)
 	{
 		return null;
