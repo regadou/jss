@@ -13,17 +13,18 @@ public class Database
    private Statement st;
    private String driver, src, defaultid="id", limits[]={"",""};
    private ResultSet lastrs = null;
-	private int min=0, max=0, vendor=-1;
+   private int min=0, max=0, vendor=-1;
    private int nbrec=-1, atrec=0;
    public static final int VENDORNAME=0, PWINURL=1, DRIVERNAME=2, LIMITSTART=3, LIMITEND=4;
    public static final int DERBY=0, HSQLDB=1, MYSQL=2, ODBC=3, ORACLE=4, POSTGRESQL=5, ACCESS=6, SQLSERVER=7;
    public static final String DRIVERS[][] =
    {
       {"derby",      "p",  "org.apache.derby.jdbc.EmbeddedDriver",         "",   ""},
+      {"h2",         null, "org.h2.Driver",                                "",   ""},
       {"hsqldb",     null, "org.hsqldb.jdbcDriver",                        "",   ""},
       {"mysql",      "p",  "com.mysql.jdbc.Driver",                        "`",  "`"},
       {"odbc",       "p",  "sun.jdbc.odbc.JdbcOdbcDriver",                 "",   ""},
-		{"oracle",		null,	"oracle.jdbc.driver.OracleDriver",              "",   ""},
+      {"oracle",     null, "oracle.jdbc.driver.OracleDriver",              "",   ""},
       {"postgresql", "p",  "org.postgresql.Driver",                        "\"", "\""},
       {"access",     "p",  "org.regadou.jmdb.MDBDriver",                   "[",  "]"},
       {"sqlserver",  "p",  "com.microsoft.sqlserver.jdbc.SQLServerDriver", "\"", "\""}
@@ -63,10 +64,10 @@ public class Database
                }
                if (con == null) con = DriverManager.getConnection(url);
                st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-													 ResultSet.CONCUR_READ_ONLY);
-					limits[0] = DRIVERS[d][LIMITSTART];
-					limits[1] = DRIVERS[d][LIMITEND];
-					Interpreter.register(this);
+                  	 ResultSet.CONCUR_READ_ONLY);
+      	limits[0] = DRIVERS[d][LIMITSTART];
+      	limits[1] = DRIVERS[d][LIMITEND];
+      	Interpreter.register(this);
                return;
             }
          }
@@ -117,34 +118,34 @@ public class Database
 
 	public void close()
 	{
-		try
-		{
-			if (lastrs != null)
-			{
-				lastrs.close();
-				lastrs = null;
-			}
-			if (st != null)
-			{
-				st.close();
-				st = null;
-			}
-			if (con != null)
-			{
-				con.close();
-				con = null;
-			}
-		}
+   try
+   {
+   	if (lastrs != null)
+   	{
+      lastrs.close();
+      lastrs = null;
+   	}
+   	if (st != null)
+   	{
+      st.close();
+      st = null;
+   	}
+   	if (con != null)
+   	{
+      con.close();
+      con = null;
+   	}
+   }
       catch (Exception e) { throw new RuntimeException(e.toString()); }
       finally { Interpreter.unregister(this); }
 	}
 	
 	public void create(String table, Scriptable schema) throws SQLException
 	{
-		if (table == null || table.equals("") || table.indexOf(" ") >= 0)
-			throw new RuntimeException("Invalid table name to create: "+table);
-		else if (schema == null)
-			throw new RuntimeException("No field in table "+table+" schema");
+   if (table == null || table.equals("") || table.indexOf(" ") >= 0)
+   	throw new RuntimeException("Invalid table name to create: "+table);
+   else if (schema == null)
+   	throw new RuntimeException("No field in table "+table+" schema");
 	   query(getTableQuery(table, schema));
 	}
 	
@@ -164,7 +165,7 @@ public class Database
    /*
       if (rs == null || rs.getType() == ResultSet.TYPE_FORWARD_ONLY)
          return -1;
-		rs.last();
+   rs.last();
       int nb = rs.getRow();
       rs.beforeFirst();
       return nb;
@@ -173,7 +174,7 @@ public class Database
 
    public ResultSet query(String q) throws SQLException
    {
-		min = max = 0;
+   min = max = 0;
       int len = q.length();
       lastrs = null;
       for (int i = 0; i < len; i++)
@@ -202,15 +203,15 @@ public class Database
    {
       try
       {
-			Scriptable obj = (Scriptable)(getMetaData("product")[0]);
-			return obj.get("name", obj).toString();
-		}
+         Scriptable obj = (Scriptable)(getMetaData("product")[0]);
+         return obj.get("name", obj).toString();
+      }
       catch (Exception e) { throw new RuntimeException(e.toString()); }
-	}
+   }
 	
    public Scriptable getDatabases() throws SQLException
    {
-		Object recs[] = getMetaData("catalog");
+      Object recs[] = getMetaData("catalog");
       if (recs == null)
          return null;
       for (int i = 0; i < recs.length; i++)
@@ -223,7 +224,7 @@ public class Database
 
    public Scriptable getTables() throws SQLException
    {
-		min = max = 0;
+      min = max = 0;
       int p = src.indexOf('?');
       String db = (p >= 0) ? src.substring(0,p) : src;
       p = db.lastIndexOf('/');
@@ -247,8 +248,8 @@ public class Database
    
    public String getTable(String table, boolean getdata)
    {
-		try
-		{
+      try
+      {
          Scriptable def = getFields(table);
          String sql = getTableQuery(table, def);
          if (!getdata)
@@ -285,24 +286,24 @@ public class Database
    
    public Scriptable getFields(String table) throws SQLException
    {
-		min = max = 0;
+      min = max = 0;
       int p = src.indexOf('?');
       String db = (p >= 0) ? src.substring(0,p) : src;
       p = db.lastIndexOf('/');
       if (p >= 0) db = db.substring(p+1);
-		Object recs[] = getMetaData("column", db+","+table);
+      Object recs[] = getMetaData("column", db+","+table);
       if (recs == null)
          return null;
       Scriptable obj = Interpreter.newObject(null);
       for (int i = 0; i < recs.length; i++)
       {
          Scriptable fld = (Scriptable)recs[i];
-			String name = fld.get("column_name", fld).toString().toLowerCase();
-			String type = getType(((Number)fld.get("data_type", fld)).intValue());
-			Object size = fld.get("column_size", fld);
-			ArrayList val = new ArrayList();
-			val.add(type);
-			val.add(size);
+   	     String name = fld.get("column_name", fld).toString().toLowerCase();
+         String type = getType(((Number)fld.get("data_type", fld)).intValue());
+   	     Object size = fld.get("column_size", fld);
+         ArrayList val = new ArrayList();
+         val.add(type);
+   	     val.add(size);
          obj.put(name, obj, Interpreter.newObject(val.toArray()));
       }
       return obj;
@@ -323,15 +324,15 @@ public class Database
          ResultSetMetaData meta = rs.getMetaData();
          int nf = meta.getColumnCount();
          for (int f = 1; f <= nf; f++)
-			{
+         {
             String name = meta.getColumnLabel(f).toLowerCase();
             String type = getType(meta.getColumnType(f));
-				Integer size = new Integer(meta.getColumnDisplaySize(f));
-				ArrayList val = new ArrayList();
-				val.add(type);
-				val.add(size);
+            Integer size = new Integer(meta.getColumnDisplaySize(f));
+            ArrayList val = new ArrayList();
+            val.add(type);
+            val.add(size);
             def.put(name, def, Interpreter.newObject(val.toArray()));
-			}
+   	     }
          return def;
       }
       catch (Exception e) { throw new RuntimeException(e.toString()); }
@@ -341,7 +342,7 @@ public class Database
    {
       try
       {
-			min = max = 0;
+   	min = max = 0;
          int p = src.indexOf('?');
          String db = (p >= 0) ? src.substring(0,p) : src;
          p = db.lastIndexOf('/');
@@ -349,10 +350,10 @@ public class Database
          Object recs[] = getMetaData("column", db+","+table);
          if (recs == null || recs.length == 0)
             return null;
-			Object lst[] = new Object[recs.length];
+   	Object lst[] = new Object[recs.length];
          for (int f = 1; f <= recs.length; f++)
-			{
-				Scriptable fld = (Scriptable)recs[f];
+   	{
+      Scriptable fld = (Scriptable)recs[f];
             lst[f-1] = fld.get("column_name", fld).toString().toLowerCase();
          }
          return Interpreter.newObject(lst);
@@ -373,7 +374,7 @@ public class Database
       {
          ResultSetMetaData meta = rs.getMetaData();
          int nf = meta.getColumnCount();
-			Object lst[] = new Object[nf];
+   	Object lst[] = new Object[nf];
          for (int f = 1; f <= nf; f++)
             lst[f-1] = meta.getColumnLabel(f).toLowerCase();
          return Interpreter.newObject(lst);
@@ -419,7 +420,7 @@ public class Database
       ArrayList lst = new ArrayList();
       while (rs.next())
          lst.add(getRecord(rs));
-		return lst.toArray();
+   return lst.toArray();
    }
 
    public Scriptable getRecord() throws SQLException
@@ -442,29 +443,29 @@ public class Database
       {
          String fld = meta.getColumnLabel(f).toLowerCase();
          Object val = rs.getObject(f);
-			if (val == null)
-				;
+   	if (val == null)
+      ;
          else if (val instanceof java.util.Date)
             val = Interpreter.newObject(val);
          else if (val instanceof java.sql.Blob)
-			{
-				java.sql.Blob bytes = (java.sql.Blob)val;
-				val = new String(bytes.getBytes((long)1, (int)bytes.length()));
-			}
+   	{
+      java.sql.Blob bytes = (java.sql.Blob)val;
+      val = new String(bytes.getBytes((long)1, (int)bytes.length()));
+   	}
          else if (val instanceof java.sql.Clob)
-			{
-				java.sql.Clob txt = (java.sql.Clob)val;
-				val = txt.getSubString((long)1, (int)txt.length());
-			}
-			else if (val.getClass().isArray()
-					&& val.getClass().getComponentType() == java.lang.Byte.TYPE)
-				val = (new String((byte[])val)).trim();
+   	{
+      java.sql.Clob txt = (java.sql.Clob)val;
+      val = txt.getSubString((long)1, (int)txt.length());
+   	}
+   	else if (val.getClass().isArray()
+      	&& val.getClass().getComponentType() == java.lang.Byte.TYPE)
+      val = (new String((byte[])val)).trim();
          else if (!(val instanceof Number)
                && !(val instanceof Boolean))
             val = val.toString().trim();
          rec.put(fld, rec, val);
       }
-		return rec;
+   return rec;
    }
 
    public Scriptable getRecord(String table) throws SQLException
@@ -489,7 +490,7 @@ public class Database
          Object val = getDefaultValue(meta.getColumnType(f));
          rec.put(fld, rec, val);
       }
-		return rec;
+   return rec;
    }
 
    public Map getRecordMap(ResultSet rs) throws SQLException
@@ -507,28 +508,28 @@ public class Database
       {
          String fld = meta.getColumnLabel(f).toLowerCase();
          Object val = rs.getObject(f);
-			if (val == null)
-				;
+   	if (val == null)
+      ;
          else if (val instanceof java.sql.Blob)
-			{
-				java.sql.Blob bytes = (java.sql.Blob)val;
-				val = new String(bytes.getBytes((long)1, (int)bytes.length()));
-			}
+   	{
+      java.sql.Blob bytes = (java.sql.Blob)val;
+      val = new String(bytes.getBytes((long)1, (int)bytes.length()));
+   	}
          else if (val instanceof java.sql.Clob)
-			{
-				java.sql.Clob txt = (java.sql.Clob)val;
-				val = txt.getSubString((long)1, (int)txt.length());
-			}
-			else if (val.getClass().isArray()
-					&& val.getClass().getComponentType() == java.lang.Byte.TYPE)
-				val = (new String((byte[])val)).trim();
+   	{
+      java.sql.Clob txt = (java.sql.Clob)val;
+      val = txt.getSubString((long)1, (int)txt.length());
+   	}
+   	else if (val.getClass().isArray()
+      	&& val.getClass().getComponentType() == java.lang.Byte.TYPE)
+      val = (new String((byte[])val)).trim();
          else if (!(val instanceof Number)
                && !(val instanceof Boolean)
                && !(val instanceof java.util.Date))
             val = val.toString().trim();
          rec.put(fld, val);
       }
-		return rec;
+   return rec;
    }
 
    public void setRecord(Scriptable rec, String table)
@@ -548,7 +549,7 @@ public class Database
          String fld = keys[i].toString();
          if (idfld.equals(fld))
          {
-				gotid = true;
+      gotid = true;
             Object val = rec.get(fld, rec);
             if (val != null)
             {
@@ -558,8 +559,8 @@ public class Database
             }
             break;
          }
-			else
-				others = true;
+   	else
+      others = true;
       }
 
       if (!update)
@@ -570,12 +571,12 @@ public class Database
          q = "insert into "+limits[0]+table+limits[1]+"(";
          more = ") values(";
          end = ")";
-			if (gotid)
-			{
-				String virgule = others ? "," : "";
-				q += idfld+virgule;
-				more += id+virgule;
-			}
+   	if (gotid)
+   	{
+      String virgule = others ? "," : "";
+      q += idfld+virgule;
+      more += id+virgule;
+   	}
       }
 
       String sep = "";
@@ -593,7 +594,7 @@ public class Database
          sep = ",";
       }
 
-		q += more+end;
+   q += more+end;
       try
       {
          query(q);
@@ -601,7 +602,7 @@ public class Database
       catch (Exception e)
       {
          throw new RuntimeException("SQL error with the following query:<br>\n"
-			                           +q+"<br>\n"+e.toString());
+   	                           +q+"<br>\n"+e.toString());
       }
    }
 
@@ -623,42 +624,42 @@ public class Database
 
    private String getValue(Object val)
    {
-		if (val instanceof Scriptable)
-		{
-			Scriptable obj = (Scriptable)val;
-			String type = obj.getClassName().toLowerCase();
-			if (type.indexOf("date") >= 0)
-			{
-				val = ScriptableObject.callMethod(obj, "getTime", new Object[]{});
-				if (val instanceof Number)
-					val = new java.util.Date(((Number)val).longValue());
-				else
-					throw new RuntimeException("Cannot get valid time from Javascript Date object");
-			}
-		}
+   if (val instanceof Scriptable)
+   {
+   	Scriptable obj = (Scriptable)val;
+   	String type = obj.getClassName().toLowerCase();
+   	if (type.indexOf("date") >= 0)
+   	{
+      val = ScriptableObject.callMethod(obj, "getTime", new Object[]{});
+      if (val instanceof Number)
+      	val = new java.util.Date(((Number)val).longValue());
+      else
+      	throw new RuntimeException("Cannot get valid time from Javascript Date object");
+   	}
+   }
 
       String txt = null;
-		if (val == null)
-			txt = "null";
+   if (val == null)
+   	txt = "null";
       else if (val instanceof Number)
          txt = val.toString();
       else if (val instanceof Boolean)
-		{
-			if (vendor == DERBY || vendor == ORACLE)
-				txt = ((Boolean)val).booleanValue() ? "1" : "0";
-			else
-				txt = val.toString();
-		}
-		else if (val instanceof java.util.Date)
-		{
-			java.util.Date dt = (java.util.Date)val;
-			txt = "{ts '"+(dt.getYear()+1900)+"-"
-				 + String.valueOf(dt.getMonth()+101).substring(1)+"-"
-				 + String.valueOf(dt.getDate()+100).substring(1)+" "
-				 + String.valueOf(dt.getHours()+100).substring(1)+":"
-				 + String.valueOf(dt.getMinutes()+100).substring(1)+":"
-				 + String.valueOf(dt.getSeconds()+100).substring(1)+"'}";
-		}
+   {
+   	if (vendor == DERBY || vendor == ORACLE)
+      txt = ((Boolean)val).booleanValue() ? "1" : "0";
+   	else
+      txt = val.toString();
+   }
+   else if (val instanceof java.util.Date)
+   {
+   	java.util.Date dt = (java.util.Date)val;
+   	txt = "{ts '"+(dt.getYear()+1900)+"-"
+       + String.valueOf(dt.getMonth()+101).substring(1)+"-"
+       + String.valueOf(dt.getDate()+100).substring(1)+" "
+       + String.valueOf(dt.getHours()+100).substring(1)+":"
+       + String.valueOf(dt.getMinutes()+100).substring(1)+":"
+       + String.valueOf(dt.getSeconds()+100).substring(1)+"'}";
+   }
       else
          txt = sqlstring(Context.toString(val));
       return txt;
@@ -689,264 +690,264 @@ public class Database
 	
 	public void setLimit(int lo, int hi)
 	{
-		if (lo <= 0 || hi <= 0)
-			min = max = 0;
-		else if (hi < lo)
-		{
-			min = hi;
-			max = lo;
-		}
-		else
-		{
-			min = lo;
-			max = hi;
-		}
+   if (lo <= 0 || hi <= 0)
+   	min = max = 0;
+   else if (hi < lo)
+   {
+   	min = hi;
+   	max = lo;
+   }
+   else
+   {
+   	min = lo;
+   	max = hi;
+   }
 	}
 	
 	private String getTableQuery(String table, Scriptable schema)
 	{
-		Object flds[] = schema.getIds();
-		if (flds.length == 0)
-			throw new RuntimeException("No field in table "+table+" schema");
-		String sql = "create table "+table;
-		for (int f = 0; f < flds.length; f++)
-		{
-			String name = flds[f].toString();
-			sql += ((f == 0) ? "\n(\n   " : ",\n   ")+name+" ";
-			Object val = schema.get(name, schema);
-			if (val == null || !(val instanceof Scriptable))
-				throw new RuntimeException("Bad definition for field "+name+" in table "+table+" schema");
-			Scriptable def = (Scriptable)val;			
-			val = def.get(0, def);
-			String type = null;
-			int len = 0;
-			if (val == null)
-				type = def.toString().toLowerCase();
-			else
-			{				
-				type = val.toString().toLowerCase();
-				val = def.get(1, def);
-				if (val != null && (val instanceof Number))
-					len = ((Number)val).intValue();
-			}
-			if (type.equals("boolean"))
-			{
-				if (vendor == DERBY || vendor == ACCESS)
-					sql += "smallint";
-				else
-					sql += "boolean";
-			}
-			else if (type.equals("number"))
-				sql += "real";
-			else if (type.equals("integer"))
-				sql += "integer";
-			else if (type.equals("date"))
-			{
-				switch (vendor)
-				{
-				case POSTGRESQL:
-				case DERBY:
-				case HSQLDB:
-					sql += "timestamp"; break;				
-				case MYSQL:
-				case ACCESS:
-				case SQLSERVER:
-					sql += "datetime"; break;			
-				case ORACLE:
-					sql += "date"; break;				
-				default:
-					throw new RuntimeException("Don't know the date type for "+getVendor());
-				}
-			}
-			else if (type.equals("binary"))
-			{
-				switch (vendor)
-				{
-				case POSTGRESQL:
-					sql += "bytea"; break;				
-				case MYSQL:
-					sql += "longblob"; break;				
-				case DERBY:
-					sql += "blob"; break;				
-				case HSQLDB:
-					sql += "binary"; break;				
-				case ACCESS:
-				case SQLSERVER:
-					sql += "longbinary"; break;			
-				case ORACLE:
-					sql += "long raw"; break;				
-				default:
-					throw new RuntimeException("Don't know the binary type for "+getVendor());
-				}
-			}
-			else if (type.equals("string"))
-			{
-				if (len > 0 && len < 256)
-					sql += "varchar("+len+")";
-				else
-				{
-					switch (vendor)
-					{
-					case POSTGRESQL:
-					case MYSQL:
-						sql += "text"; break;				
-					case DERBY:
-						sql += "clob"; break;				
-					case HSQLDB:
-						sql += "longvarchar"; break;				
-					case ACCESS:
-					case SQLSERVER:
-						sql += "longchar"; break;			
-					case ORACLE:
-						sql += "long"; break;				
-					default:
-						throw new RuntimeException("Don't know the long string type for "+getVendor());
-					}
-				}
-			}
-		}
-		
-		return sql+"\n)";
+   Object flds[] = schema.getIds();
+   if (flds.length == 0)
+   	throw new RuntimeException("No field in table "+table+" schema");
+   String sql = "create table "+table;
+   for (int f = 0; f < flds.length; f++)
+   {
+   	String name = flds[f].toString();
+   	sql += ((f == 0) ? "\n(\n   " : ",\n   ")+name+" ";
+   	Object val = schema.get(name, schema);
+   	if (val == null || !(val instanceof Scriptable))
+      throw new RuntimeException("Bad definition for field "+name+" in table "+table+" schema");
+   	Scriptable def = (Scriptable)val;   	
+   	val = def.get(0, def);
+   	String type = null;
+   	int len = 0;
+   	if (val == null)
+      type = def.toString().toLowerCase();
+   	else
+   	{      
+      type = val.toString().toLowerCase();
+      val = def.get(1, def);
+      if (val != null && (val instanceof Number))
+      	len = ((Number)val).intValue();
+   	}
+   	if (type.equals("boolean"))
+   	{
+      if (vendor == DERBY || vendor == ACCESS)
+      	sql += "smallint";
+      else
+      	sql += "boolean";
+   	}
+   	else if (type.equals("number"))
+      sql += "real";
+   	else if (type.equals("integer"))
+      sql += "integer";
+   	else if (type.equals("date"))
+   	{
+      switch (vendor)
+      {
+      case POSTGRESQL:
+      case DERBY:
+      case HSQLDB:
+      	sql += "timestamp"; break;      
+      case MYSQL:
+      case ACCESS:
+      case SQLSERVER:
+      	sql += "datetime"; break;   	
+      case ORACLE:
+      	sql += "date"; break;      
+      default:
+      	throw new RuntimeException("Don't know the date type for "+getVendor());
+      }
+   	}
+   	else if (type.equals("binary"))
+   	{
+      switch (vendor)
+      {
+      case POSTGRESQL:
+      	sql += "bytea"; break;      
+      case MYSQL:
+      	sql += "longblob"; break;      
+      case DERBY:
+      	sql += "blob"; break;      
+      case HSQLDB:
+      	sql += "binary"; break;      
+      case ACCESS:
+      case SQLSERVER:
+      	sql += "longbinary"; break;   	
+      case ORACLE:
+      	sql += "long raw"; break;      
+      default:
+      	throw new RuntimeException("Don't know the binary type for "+getVendor());
+      }
+   	}
+   	else if (type.equals("string"))
+   	{
+      if (len > 0 && len < 256)
+      	sql += "varchar("+len+")";
+      else
+      {
+      	switch (vendor)
+      	{
+      	case POSTGRESQL:
+      	case MYSQL:
+         sql += "text"; break;      
+      	case DERBY:
+         sql += "clob"; break;      
+      	case HSQLDB:
+         sql += "longvarchar"; break;      
+      	case ACCESS:
+      	case SQLSERVER:
+         sql += "longchar"; break;   	
+      	case ORACLE:
+         sql += "long"; break;      
+      	default:
+         throw new RuntimeException("Don't know the long string type for "+getVendor());
+      	}
+      }
+   	}
+   }
+   
+   return sql+"\n)";
 	}
 
 	private Object getDefaultValue(int type)
 	{
-		Object val = null;
-		switch (type)
-		{
-		case Types.BIT:
-		case Types.BOOLEAN:
-			val = new Boolean(false);
-			break;
-		case Types.DECIMAL:
-		case Types.DOUBLE:
-		case Types.FLOAT:
-		case Types.NUMERIC:
-		case Types.REAL:
-			val = new Double(0);
-			break;
-		case Types.BIGINT:
-		case Types.INTEGER:
-		case Types.SMALLINT:
-		case Types.TINYINT:
-			val = new Integer(0);
-			break;
-		case Types.DATE:
-		case Types.TIME:
-		case Types.TIMESTAMP:
-			val = null;
-			break;
-		case Types.BLOB:
-		case Types.VARBINARY:
-		case Types.LONGVARBINARY:
-			val = "";
-			break;
-		default:
-			val = "";
-		}
-		return val;
+   Object val = null;
+   switch (type)
+   {
+   case Types.BIT:
+   case Types.BOOLEAN:
+   	val = new Boolean(false);
+   	break;
+   case Types.DECIMAL:
+   case Types.DOUBLE:
+   case Types.FLOAT:
+   case Types.NUMERIC:
+   case Types.REAL:
+   	val = new Double(0);
+   	break;
+   case Types.BIGINT:
+   case Types.INTEGER:
+   case Types.SMALLINT:
+   case Types.TINYINT:
+   	val = new Integer(0);
+   	break;
+   case Types.DATE:
+   case Types.TIME:
+   case Types.TIMESTAMP:
+   	val = null;
+   	break;
+   case Types.BLOB:
+   case Types.VARBINARY:
+   case Types.LONGVARBINARY:
+   	val = "";
+   	break;
+   default:
+   	val = "";
+   }
+   return val;
 	}
 	
 	private String getType(int src)
 	{
-		String type = null;
-		switch (src)
-		{
-		case Types.BIT:
-		case Types.BOOLEAN:
-			type = "Boolean";
-			break;
-		case Types.DECIMAL:
-		case Types.DOUBLE:
-		case Types.FLOAT:
-		case Types.NUMERIC:
-		case Types.REAL:
-			type = "Number";
-			break;
-		case Types.BIGINT:
-		case Types.INTEGER:
-		case Types.SMALLINT:
-		case Types.TINYINT:
-			type = "Integer";
-			break;
-		case Types.DATE:
-		case Types.TIME:
-		case Types.TIMESTAMP:
-			type = "Date";
-			break;
-		case Types.BLOB:
-		case Types.VARBINARY:
-		case Types.LONGVARBINARY:
-			type = "Binary";
-			break;
-		default:
-			type = "String";
-		}
-		return type;
+   String type = null;
+   switch (src)
+   {
+   case Types.BIT:
+   case Types.BOOLEAN:
+   	type = "Boolean";
+   	break;
+   case Types.DECIMAL:
+   case Types.DOUBLE:
+   case Types.FLOAT:
+   case Types.NUMERIC:
+   case Types.REAL:
+   	type = "Number";
+   	break;
+   case Types.BIGINT:
+   case Types.INTEGER:
+   case Types.SMALLINT:
+   case Types.TINYINT:
+   	type = "Integer";
+   	break;
+   case Types.DATE:
+   case Types.TIME:
+   case Types.TIMESTAMP:
+   	type = "Date";
+   	break;
+   case Types.BLOB:
+   case Types.VARBINARY:
+   case Types.LONGVARBINARY:
+   	type = "Binary";
+   	break;
+   default:
+   	type = "String";
+   }
+   return type;
 	}
 
 	public Object[] getMetaData(String type) throws SQLException
 	{
-		return getMetaData(type, null);
+   return getMetaData(type, null);
 	}
 
 	private static final String METADATA[] = {"product","catalog","table","column"};
 	private static final int META_PRODUCT=0, META_CATALOG=1, META_TABLE=2, META_COLUMN=3;
 	private Object[] getMetaData(String type, String param) throws SQLException
 	{
-		int t = 0;
-		for (; t < METADATA.length; t++)
- 			if (METADATA[t].equals(type))
-				break;
-		if (t >= METADATA.length)
-			return new Object[0];
-		DatabaseMetaData dmd = con.getMetaData();
-		if (dmd == null)
-		{
-			String q;
-			switch (t)
-			{
-			case META_PRODUCT:
-				q = "system product";
-				break;
-			case META_CATALOG:
-				q = "system catalog";
-				break;
-			case META_TABLE:
-				q = "system table";
-				break;
-			case META_COLUMN:
-				String params[] = param.split(",");
-				q = "select * from "+params[1];
-				break;
-			default:
-				return new Object[0];
-			}
-			st.execute(q);
-			return getRecordArray(st.getResultSet());
-		}
-		else
-		{
-			switch (t)
-			{
-			case META_PRODUCT:
-				String name = dmd.getDatabaseProductName();
-				Scriptable rec = Interpreter.newObject(null);
+   int t = 0;
+   for (; t < METADATA.length; t++)
+    	if (METADATA[t].equals(type))
+      break;
+   if (t >= METADATA.length)
+   	return new Object[0];
+   DatabaseMetaData dmd = con.getMetaData();
+   if (dmd == null)
+   {
+   	String q;
+   	switch (t)
+   	{
+   	case META_PRODUCT:
+      q = "system product";
+      break;
+   	case META_CATALOG:
+      q = "system catalog";
+      break;
+   	case META_TABLE:
+      q = "system table";
+      break;
+   	case META_COLUMN:
+      String params[] = param.split(",");
+      q = "select * from "+params[1];
+      break;
+   	default:
+      return new Object[0];
+   	}
+   	st.execute(q);
+   	return getRecordArray(st.getResultSet());
+   }
+   else
+   {
+   	switch (t)
+   	{
+   	case META_PRODUCT:
+      String name = dmd.getDatabaseProductName();
+      Scriptable rec = Interpreter.newObject(null);
             rec.put("name", rec, name);
-				return new Object[]{rec};
-			case META_CATALOG:
-				return getRecordArray(dmd.getCatalogs());
-			case META_TABLE:
-				return getRecordArray(dmd.getTables(param,null,null,null));
-			case META_COLUMN:
-				String params[] = param.split(",");
-		   	String db = params[0];
-		   	String tab = params[1];
-				return getRecordArray(dmd.getColumns(db,null,tab,null));
-			}
-		}
+      return new Object[]{rec};
+   	case META_CATALOG:
+      return getRecordArray(dmd.getCatalogs());
+   	case META_TABLE:
+      return getRecordArray(dmd.getTables(param,null,null,null));
+   	case META_COLUMN:
+      String params[] = param.split(",");
+      	String db = params[0];
+      	String tab = params[1];
+      return getRecordArray(dmd.getColumns(db,null,tab,null));
+   	}
+   }
 
-		return new Object[0];
+   return new Object[0];
 	}
 }
 

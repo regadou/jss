@@ -596,9 +596,13 @@ public class Interpreter extends ImporterTopLevel {
       message.setSubject(subject);
       if (sender.length > 1)
          message.addHeader("Reply-To", sender[1]);
+         
+      String txt = (msg == null) ? "" : msg.trim();
+      String charset = "utf-8";
+      String type = (!txt.isEmpty() && txt.charAt(0) == '<' && txt.charAt(txt.length()-1) == '>') ? "html" : "plain";
       if (att != null) {
          MimeBodyPart part = new MimeBodyPart();
-         part.setText(msg);
+         part.setText(txt, charset, type);
          MimeMultipart multi = new MimeMultipart();
          multi.addBodyPart(part);
          part = new MimeBodyPart();
@@ -608,7 +612,7 @@ public class Interpreter extends ImporterTopLevel {
          multi.addBodyPart(part);
          message.setContent(multi);
       } else {
-         message.setText(msg);
+         message.setText(txt, charset, type);
       }
       
       String debugMessage = "Sending email from "+src+" to "+dst+" attachment="+att+" properties="+props+" auth="+auth;

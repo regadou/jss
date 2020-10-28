@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project name="JSS" default="lib" basedir=".">
      <path id="classpath.web">
-        <fileset id="lib.compile" dir="../aws/WEB-INF/lib">
+        <fileset id="lib.compile" dir="../html/WEB-INF/lib">
             <include name="**/*.jar"/>
         </fileset>
         <fileset id="lib.servlet" dir="../local">
@@ -23,7 +23,7 @@
      </target>
 
      <target name="lib" depends="compile">
-          <jar basedir="build" destfile="../aws/WEB-INF/lib/jss.jar" manifest="META-INF/MANIFEST.MF"/>
+          <jar basedir="build" destfile="../html/WEB-INF/lib/jss.jar" manifest="META-INF/MANIFEST.MF"/>
      </target>
 
      <target name="all" depends="clean, lib"/>
